@@ -186,6 +186,7 @@ const MissionsPage = () => {
 
   return (
     <div className="min-h-screen bg-[#0d1b2a] text-white font-sans relative overflow-hidden">
+      {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/30 rounded-full blur-3xl animate-pulse"></div>
@@ -194,7 +195,9 @@ const MissionsPage = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0d1b2a]/50 to-[#0d1b2a]"></div>
       </div>
 
+      {/* Main Carousel Section */}
       <main className="relative min-h-[calc(100vh-180px)] flex items-center justify-center py-8 lg:py-12">
+        {/* Cards Container */}
         <div className="flex items-center justify-center gap-4 lg:gap-6 px-4 lg:px-8 max-w-7xl mx-auto" style={{perspective: '1500px'}}>
           {visibleLevels.map((level, index) => {
             if (!level) return <div key={`empty-${index}`} className="w-64 lg:w-80 opacity-0"></div>;
@@ -225,6 +228,7 @@ const MissionsPage = () => {
                   cursor: isCenter ? (level.locked ? 'pointer' : 'default') : 'pointer'
                 }}
               >
+                {/* Top Progress Indicator */}
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <div className="flex-1 h-0.5 bg-gradient-to-r from-transparent via-cyan-500/50 to-cyan-500"></div>
                   <div className="bg-[#1a2633] border-2 border-cyan-500 rounded-full px-4 py-1.5 shadow-lg shadow-cyan-500/30">
@@ -233,6 +237,7 @@ const MissionsPage = () => {
                   <div className="flex-1 h-0.5 bg-gradient-to-l from-transparent via-cyan-500/50 to-cyan-500"></div>
                 </div>
 
+                {/* Card */}
                 <div 
                   className="relative rounded-lg overflow-hidden shadow-2xl transition-all duration-700 h-[500px] lg:h-[600px]"
                   style={{
@@ -242,6 +247,7 @@ const MissionsPage = () => {
                     boxShadow: !level.locked && isCenter ? `0 20px 60px ${level.color.glow}` : '0 10px 40px rgba(0,0,0,0.5)'
                   }}
                 >
+                  {/* Top Decorative Lines */}
                   <div className="absolute top-0 left-0 right-0 h-20 z-10 pointer-events-none">
                     <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
                       <line x1="0" y1="0" x2="30%" y2="0" stroke="rgba(255,255,255,0.2)" strokeWidth="2"/>
@@ -252,6 +258,7 @@ const MissionsPage = () => {
                     </svg>
                   </div>
 
+                  {/* Content Area */}
                   <div className="absolute inset-0 pointer-events-none">
                     {level.locked ? (
                       <div className="h-full flex flex-col items-center justify-center space-y-4 animate-pulse">
@@ -280,7 +287,6 @@ const MissionsPage = () => {
                         {/* Gradient Overlay for better text readability */}
                         <div className="absolute top-0 left-0 right-0 h-[calc(100%-100px)] bg-gradient-to-b from-black/20 via-transparent to-black/60"></div>
                         
-                        
                         {level.ready && (
                           <div className="absolute top-0 left-0 right-0 h-[calc(100%-100px)] flex items-center justify-center bg-black/40 z-10">
                             <div className="bg-white/90 backdrop-blur-sm px-10 py-4 rounded-full border-2 border-white shadow-xl animate-pulse">
@@ -292,11 +298,13 @@ const MissionsPage = () => {
                     )}
                   </div>
 
+                  {/* Agent Info Bar */}
                   <div className="absolute bottom-20 left-0 right-0 bg-black/90 backdrop-blur-md py-3 px-4 border-t-2 border-white/10 pointer-events-none z-10">
                     <p className="text-center text-white font-bold text-sm uppercase tracking-widest truncate">{level.agent}</p>
                     <p className="text-center text-gray-400 text-xs uppercase mt-0.5 tracking-wide">{level.role}</p>
                   </div>
 
+                  {/* Bottom Status Indicator */}
                   <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none">
                     <div 
                       className={`w-12 h-12 rounded-full flex items-center justify-center shadow-xl border-2 transition-all duration-300 ${
@@ -324,10 +332,12 @@ const MissionsPage = () => {
                     </svg>
                   </div>
 
+                  {/* Corner Decorations */}
                   <div className="absolute bottom-24 left-3 w-10 h-10 border-l-2 border-b-2 border-white/20 pointer-events-none z-10"></div>
                   <div className="absolute bottom-24 right-3 w-10 h-10 border-r-2 border-b-2 border-white/20 pointer-events-none z-10"></div>
                 </div>
 
+                {/* Bottom Label */}
                 <div className="flex justify-center mt-4">
                   <div className="text-xs text-gray-500 bg-[#0f1923]/80 px-4 py-1 rounded-full border border-gray-700/50">
                     TASK
@@ -339,6 +349,7 @@ const MissionsPage = () => {
         </div>
       </main>
 
+      {/* Puzzle Modal */}
       {showPuzzle && currentPuzzle && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#1a2633] border-2 border-cyan-500 rounded-lg p-6 lg:p-8 max-w-lg w-full shadow-2xl shadow-cyan-500/50">
@@ -386,6 +397,15 @@ const MissionsPage = () => {
             <div className="mt-4 text-center text-gray-400 text-xs">
               <p>Hint: Think carefully about the riddle</p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Message for blocked levels */}
+      {message && !showPuzzle && (
+        <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-red-500/20 text-red-400 border border-red-500 px-6 py-3 rounded-lg font-bold shadow-xl">
+            {message}
           </div>
         </div>
       )}
