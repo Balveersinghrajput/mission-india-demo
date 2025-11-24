@@ -1,4 +1,4 @@
-import MissionIndiaHunt from '@/mission/levels/page';
+import MissionIndiaHunt from './mission/levels/page';
 
 function Page() {
   return (
