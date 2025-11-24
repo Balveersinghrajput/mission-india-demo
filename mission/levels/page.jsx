@@ -1,3 +1,5 @@
+'use client'
+
 import { Check, Lock, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
