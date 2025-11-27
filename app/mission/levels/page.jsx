@@ -1,9 +1,11 @@
 'use client'
 
-import { Check, Lock, X } from 'lucide-react';
+import { Check, Lock, RotateCcw, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const MissionsPage = () => {
+  const router = useRouter();
   const [levels, setLevels] = useState([]);
   const [showPuzzle, setShowPuzzle] = useState(false);
   const [currentPuzzle, setCurrentPuzzle] = useState(null);
@@ -11,6 +13,7 @@ const MissionsPage = () => {
   const [timer, setTimer] = useState(325);
   const [message, setMessage] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false);
 
   useEffect(() => {
     const initialLevels = Array.from({ length: 10 }, (_, i) => ({
@@ -23,9 +26,26 @@ const MissionsPage = () => {
       role: getRoleForLevel(i + 1),
       color: getColorForLevel(i + 1),
       puzzle: getPuzzleForLevel(i + 1),
-      image: getImageForLevel(i + 1)
+      image: getImageForLevel(i + 1),
+      task: getTaskForLevel(i + 1)
     }));
-    setLevels(initialLevels);
+    
+    // Load saved progress from localStorage
+    if (typeof window !== 'undefined') {
+      const savedProgress = localStorage.getItem('missionProgress');
+      if (savedProgress) {
+        const progress = JSON.parse(savedProgress);
+        setLevels(initialLevels.map(level => ({
+          ...level,
+          locked: progress[level.id]?.locked ?? level.locked,
+          completed: progress[level.id]?.completed ?? level.completed
+        })));
+      } else {
+        setLevels(initialLevels);
+      }
+    } else {
+      setLevels(initialLevels);
+    }
   }, []);
 
   useEffect(() => {
@@ -95,32 +115,86 @@ const MissionsPage = () => {
     return puzzles[level - 1];
   };
 
+  const getTaskForLevel = (level) => {
+    const tasks = [
+      { 
+        title: "Code Challenge", 
+        description: "What is the output of: console.log(2 + '2')?", 
+        answer: "22",
+        hint: "JavaScript type coercion converts the number to a string"
+      },
+      { 
+        title: "Math Puzzle", 
+        description: "If you multiply this number by any other number, the answer will always be the same. What number is it?", 
+        answer: "0",
+        hint: "Think about multiplication properties"
+      },
+      { 
+        title: "Logic Test", 
+        description: "What is the next number in the sequence: 2, 6, 12, 20, 30, ?", 
+        answer: "42",
+        hint: "Each number is n*(n+1)"
+      },
+      { 
+        title: "Word Problem", 
+        description: "Remove one letter from me and I become even. What number am I?", 
+        answer: "seven",
+        hint: "Think about the word itself"
+      },
+      { 
+        title: "Pattern Recognition", 
+        description: "What comes next: A1, B2, C3, D4, ?", 
+        answer: "E5",
+        hint: "Follow the alphabet and numbers"
+      },
+      { 
+        title: "Brain Teaser", 
+        description: "I am an odd number. Take away one letter and I become even. What number am I?", 
+        answer: "seven",
+        hint: "Remove the 's'"
+      },
+      { 
+        title: "Quick Math", 
+        description: "What is 15% of 200?", 
+        answer: "30",
+        hint: "Multiply by 0.15"
+      },
+      { 
+        title: "Cipher Challenge", 
+        description: "If CAT = 3120, what does DOG equal?", 
+        answer: "4157",
+        hint: "Position in alphabet then reverse"
+      },
+      { 
+        title: "Number Theory", 
+        description: "What is the smallest prime number greater than 10?", 
+        answer: "11",
+        hint: "Think of divisibility"
+      },
+      { 
+        title: "Final Challenge", 
+        description: "How many seconds are in one hour?", 
+        answer: "3600",
+        hint: "60 seconds × 60 minutes"
+      }
+    ];
+    return tasks[level - 1];
+  };
+
   const handleLevelClick = (level, index) => {
-    console.log('Click detected on level:', level.id, 'Index:', index, 'Locked:', level.locked, 'Completed:', level.completed);
-    
-    // Only allow clicking on the center card
     if (index === 1) {
-      // Check if previous level is completed (or if this is level 1)
       const previousLevel = levels.find(l => l.id === level.id - 1);
       const canAccessLevel = level.id === 1 || (previousLevel && previousLevel.completed);
       
-      console.log('Can access level:', canAccessLevel, 'Previous level completed:', previousLevel?.completed);
-      
-      // If level is locked and previous level is completed, show puzzle
       if (level.locked && canAccessLevel) {
-        console.log('Opening puzzle for level:', level.id);
         setCurrentPuzzle(level);
         setShowPuzzle(true);
         setPuzzleAnswer('');
         setMessage('');
       } else if (level.locked && !canAccessLevel) {
-        // Show message that previous level must be completed first
-        console.log('Level blocked - previous not completed');
         setMessage('🔒 Complete previous level first!');
         setTimeout(() => setMessage(''), 2000);
       } else if (!level.locked && level.completed) {
-        // Level already completed, do nothing or show message
-        console.log('Level already completed');
         setMessage('✅ Level already completed!');
         setTimeout(() => setMessage(''), 2000);
       }
@@ -129,18 +203,24 @@ const MissionsPage = () => {
 
   const handlePuzzleSubmit = () => {
     if (puzzleAnswer.toLowerCase().trim() === currentPuzzle.puzzle.answer.toLowerCase()) {
-      setMessage('✅ Correct! Level Completed!');
+      setMessage('✅ Correct! Redirecting to mission...');
+      
       setTimeout(() => {
-        setLevels(prev => prev.map(l => {
-          // Mark current level as completed and unlocked
-          if (l.id === currentPuzzle.id) {
-            return { ...l, locked: false, completed: true };
-          }
-          return l;
-        }));
         setShowPuzzle(false);
-        setPuzzleAnswer('');
-        setMessage('');
+        
+        // Store level data in localStorage before navigation
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('currentMissionLevel', JSON.stringify({
+            id: currentPuzzle.id,
+            agent: currentPuzzle.agent,
+            role: currentPuzzle.role,
+            color: currentPuzzle.color,
+            task: currentPuzzle.task
+          }));
+        }
+        
+        // Navigate to task page
+        router.push('/mission/Task');
       }, 1500);
     } else {
       setMessage('❌ Incorrect! Try again.');
@@ -148,10 +228,33 @@ const MissionsPage = () => {
     }
   };
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const handleRestart = () => {
+    if (typeof window !== 'undefined') {
+      // Clear all mission-related data from localStorage
+      localStorage.removeItem('missionProgress');
+      localStorage.removeItem('currentMissionLevel');
+      
+      // Reset all levels to initial state
+      const initialLevels = Array.from({ length: 10 }, (_, i) => ({
+        id: i + 1,
+        name: `Level ${i + 1}`,
+        locked: true,
+        completed: false,
+        ready: false,
+        agent: getAgentForLevel(i + 1),
+        role: getRoleForLevel(i + 1),
+        color: getColorForLevel(i + 1),
+        puzzle: getPuzzleForLevel(i + 1),
+        image: getImageForLevel(i + 1),
+        task: getTaskForLevel(i + 1)
+      }));
+      
+      setLevels(initialLevels);
+      setCurrentIndex(0);
+      setShowRestartConfirm(false);
+      setMessage('🔄 Progress reset! Start from Level 1.');
+      setTimeout(() => setMessage(''), 3000);
+    }
   };
 
   const getVisibleLevels = () => {
@@ -195,9 +298,19 @@ const MissionsPage = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0d1b2a]/50 to-[#0d1b2a]"></div>
       </div>
 
+      {/* Restart Button */}
+      <div className="absolute top-6 right-6 z-30">
+        <button
+          onClick={() => setShowRestartConfirm(true)}
+          className="flex items-center gap-2 bg-red-500/20 hover:bg-red-500/30 border-2 border-red-500 text-red-400 hover:text-red-300 px-4 py-2 rounded-lg font-bold uppercase tracking-wider transition-all shadow-lg shadow-red-500/20 hover:shadow-red-500/40"
+        >
+          <RotateCcw className="w-5 h-5" />
+          <span className="hidden sm:inline">Restart</span>
+        </button>
+      </div>
+
       {/* Main Carousel Section */}
       <main className="relative min-h-[calc(100vh-180px)] flex items-center justify-center py-8 lg:py-12">
-        {/* Cards Container */}
         <div className="flex items-center justify-center gap-4 lg:gap-6 px-4 lg:px-8 max-w-7xl mx-auto" style={{perspective: '1500px'}}>
           {visibleLevels.map((level, index) => {
             if (!level) return <div key={`empty-${index}`} className="w-64 lg:w-80 opacity-0"></div>;
@@ -228,7 +341,6 @@ const MissionsPage = () => {
                   cursor: isCenter ? (level.locked ? 'pointer' : 'default') : 'pointer'
                 }}
               >
-                {/* Top Progress Indicator */}
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <div className="flex-1 h-0.5 bg-gradient-to-r from-transparent via-cyan-500/50 to-cyan-500"></div>
                   <div className="bg-[#1a2633] border-2 border-cyan-500 rounded-full px-4 py-1.5 shadow-lg shadow-cyan-500/30">
@@ -237,7 +349,6 @@ const MissionsPage = () => {
                   <div className="flex-1 h-0.5 bg-gradient-to-l from-transparent via-cyan-500/50 to-cyan-500"></div>
                 </div>
 
-                {/* Card */}
                 <div 
                   className="relative rounded-lg overflow-hidden shadow-2xl transition-all duration-700 h-[500px] lg:h-[600px]"
                   style={{
@@ -247,7 +358,6 @@ const MissionsPage = () => {
                     boxShadow: !level.locked && isCenter ? `0 20px 60px ${level.color.glow}` : '0 10px 40px rgba(0,0,0,0.5)'
                   }}
                 >
-                  {/* Top Decorative Lines */}
                   <div className="absolute top-0 left-0 right-0 h-20 z-10 pointer-events-none">
                     <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
                       <line x1="0" y1="0" x2="30%" y2="0" stroke="rgba(255,255,255,0.2)" strokeWidth="2"/>
@@ -258,7 +368,6 @@ const MissionsPage = () => {
                     </svg>
                   </div>
 
-                  {/* Content Area */}
                   <div className="absolute inset-0 pointer-events-none">
                     {level.locked ? (
                       <div className="h-full flex flex-col items-center justify-center space-y-4 animate-pulse">
@@ -276,7 +385,6 @@ const MissionsPage = () => {
                       </div>
                     ) : (
                       <>
-                        {/* Full Card Image */}
                         <div className="absolute top-0 left-0 right-0 h-[calc(100%-100px)] overflow-hidden">
                           <img 
                             src={level.image} 
@@ -284,7 +392,6 @@ const MissionsPage = () => {
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        {/* Gradient Overlay for better text readability */}
                         <div className="absolute top-0 left-0 right-0 h-[calc(100%-100px)] bg-gradient-to-b from-black/20 via-transparent to-black/60"></div>
                         
                         {level.ready && (
@@ -298,13 +405,11 @@ const MissionsPage = () => {
                     )}
                   </div>
 
-                  {/* Agent Info Bar */}
                   <div className="absolute bottom-20 left-0 right-0 bg-black/90 backdrop-blur-md py-3 px-4 border-t-2 border-white/10 pointer-events-none z-10">
                     <p className="text-center text-white font-bold text-sm uppercase tracking-widest truncate">{level.agent}</p>
                     <p className="text-center text-gray-400 text-xs uppercase mt-0.5 tracking-wide">{level.role}</p>
                   </div>
 
-                  {/* Bottom Status Indicator */}
                   <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none">
                     <div 
                       className={`w-12 h-12 rounded-full flex items-center justify-center shadow-xl border-2 transition-all duration-300 ${
@@ -325,19 +430,16 @@ const MissionsPage = () => {
                     </div>
                   </div>
 
-                  {/* Bottom Arrow Decoration */}
                   <div className="absolute bottom-0 left-0 right-0 w-full h-20 overflow-visible pointer-events-none z-10">
                     <svg className="w-full h-full" viewBox="0 0 96 80" preserveAspectRatio="none">
                       <path d="M0,0 L36,48 L48,60 L60,48 L96,0" fill="rgba(0,0,0,0.5)" stroke="rgba(6, 6, 6, 0.15)" strokeWidth="5.5"/>
                     </svg>
                   </div>
 
-                  {/* Corner Decorations */}
                   <div className="absolute bottom-24 left-3 w-10 h-10 border-l-2 border-b-2 border-white/20 pointer-events-none z-10"></div>
                   <div className="absolute bottom-24 right-3 w-10 h-10 border-r-2 border-b-2 border-white/20 pointer-events-none z-10"></div>
                 </div>
 
-                {/* Bottom Label */}
                 <div className="flex justify-center mt-4">
                   <div className="text-xs text-gray-500 bg-[#0f1923]/80 px-4 py-1 rounded-full border border-gray-700/50">
                     TASK
@@ -348,6 +450,39 @@ const MissionsPage = () => {
           })}
         </div>
       </main>
+
+      {/* Restart Confirmation Modal */}
+      {showRestartConfirm && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1a2633] border-2 border-red-500 rounded-lg p-6 lg:p-8 max-w-md w-full shadow-2xl shadow-red-500/50">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+                <RotateCcw className="w-6 h-6 text-red-400" />
+              </div>
+              <h2 className="text-xl lg:text-2xl font-bold text-white uppercase tracking-wider">Restart Progress?</h2>
+            </div>
+            
+            <p className="text-gray-300 mb-6 leading-relaxed">
+              This will reset all levels and tasks. All your progress will be lost. Are you sure you want to continue?
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowRestartConfirm(false)}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg uppercase tracking-wider transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRestart}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-lg uppercase tracking-wider transition-colors shadow-lg shadow-red-500/30"
+              >
+                Restart
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Puzzle Modal */}
       {showPuzzle && currentPuzzle && (
@@ -404,7 +539,11 @@ const MissionsPage = () => {
       {/* Error Message for blocked levels */}
       {message && !showPuzzle && (
         <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50">
-          <div className="bg-red-500/20 text-red-400 border border-red-500 px-6 py-3 rounded-lg font-bold shadow-xl">
+          <div className={`px-6 py-3 rounded-lg font-bold shadow-xl ${
+            message.includes('reset') 
+              ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500'
+              : 'bg-red-500/20 text-red-400 border border-red-500'
+          }`}>
             {message}
           </div>
         </div>
